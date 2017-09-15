@@ -5,7 +5,7 @@ function Character(){
 
 Character.prototype.init = function(size){
   this.size = size;
-};
+}
 
 function CharacterShot(){
   this.position = new Point();
@@ -40,7 +40,7 @@ CharacterShot.prototype.move = function(){
 function Enemy(){
   this.position = new Point();
   this.size = 0;
-  this.type = 0; // typeで敵機の挙動を指定
+  this.type = 0;
   this.param = 0;
   this.alive = false;
 }
@@ -98,7 +98,7 @@ EnemyShot.prototype.set = function(p, vector, size, speed){
   this.speed = speed;
 
   this.alive = true;
-};
+}
 EnemyShot.prototype.move = function(){
   this.position.x += this.vector.x * this.speed;
   this.position.y += this.vector.y * this.speed;
