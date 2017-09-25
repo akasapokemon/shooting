@@ -6,19 +6,25 @@
   <script src="common.js"></script>
   <script src="character.js"></script>
   <script src="explosion.js"></script>
+  <script src="boss.js"></script>
+  <script src="boss.js"></script>
+  <link rel="stylesheet" href="style.css">
   <script src="main.js"></script>
   <style>canvas {border: 1px solid gray;}</style>
 </head>
-<body>
+<body bgcolor="#000000">
     <canvas id="screen"></canvas>
     <p id="info"></p> 
-    <h1 id="title">ルール説明</h1>
+    <h1 id="title">操作方法</h1>
     <ul id="li">
-      <li></li>
-      <li></li>
-      <li></li>
+      <li>移動はトラックパッド（マウス）、ショットの発射はzキーです。</li>
+      <li>ショットで敵と敵の弾を撃ち落とすと、
+        左上の得点（SCORE）に反映されます。</li>
+      <li>敵の弾、もしくは敵に当たるとゲームオーバーです。　</li>
+      <li>ゲームを終了したい場合はescキー、もう一度プレイしたいときはリロードしてください。</li>
+      <li>BGMの音量調整は画面下のコントロールバーでできます。</li>
     </ul>
-    <audio src="music/digitalworld.MP3" autoplay loop></audio>
+    <!-- <audio id="audio" src="music/digitalworld.MP3" controls autoplay loop></audio> -->
     <!-- bgcolor="#000000" -->
 </body>
 </html>

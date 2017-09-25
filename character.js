@@ -43,6 +43,7 @@ function Enemy(){
   this.type = 0;
   this.param = 0;
   this.alive = false;
+  this.idx = 0;
 }
 
 Enemy.prototype.set = function(p,size,type){
@@ -86,6 +87,8 @@ function EnemyShot(){
   this.size = 0;
   this.speed = 0;
   this.alive = false;
+  this.idx = 0;
+  this.image;
 }
 
 EnemyShot.prototype.set = function(p, vector, size, speed){
