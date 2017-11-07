@@ -12,10 +12,12 @@ let score = 0;
 let frame = 80;
 let level = 0;
 let image_idx = 0;
-let boss_event = true;
-let weakEnemy = false;
+let boss_event = false;
+let weakEnemy = true;
 let number = 1;
 let boss_speed = 3;
+let notAliveNum = 0;
+let clear = false;
 
 
 // 定数
@@ -27,6 +29,8 @@ const ENEMY_SHOT_IMAGES = 5;
 const EXPLOSION_MAX_COUNT = 4;
 const ANIMATION_TICS = 10;
 const BOSS_BIT_COUNT = 2;
+const BOSS_SHOT_MAX_COUNT = 10;
+const BOSS_BIT_SHOT_MAX_COUNT = 20;
 
 // メインプログラム
 window.onload = function () {
@@ -131,9 +135,19 @@ window.onload = function () {
 
   let boss = new Boss();
 
+  let bossShot = new Array(BOSS_SHOT_MAX_COUNT);
+  for (i = 0; i < BOSS_BIT_SHOT_MAX_COUNT; i++) {
+    bossShot[i] = new BossShot();
+  }
+
   let bit = new Array(BOSS_BIT_COUNT);
   for (i = 0; i < BOSS_BIT_COUNT; i++) {
     bit[i] = new Bit();
+  }
+
+  let bitShot = new Array(BOSS_BIT_SHOT_MAX_COUNT);
+  for (i = 0; i < BOSS_BIT_SHOT_MAX_COUNT; i++) {
+    bitShot[i] = new BitShot();
   }
 
 
@@ -155,6 +169,7 @@ window.onload = function () {
       ctx.fillText(title, screenCanvas.width * 1 / 2, screenCanvas.height * 1 / 3);
 
     } else if (start) {
+      
       // メインの描画
       counter++;
       ctx.clearRect(0, 0, screenCanvas.width, screenCanvas.height);
@@ -220,17 +235,15 @@ window.onload = function () {
         }
       }
 
-
       // エネミーの出現管理
       if (counter % frame === 0) {
         if (boss_event) {
           p.x = screenCanvas.width / 2;
           p.y = -boss.size;
-          boss.set(p, 50, 30);
+          boss.set(p, 50, 50);
           for (i = 0; i < BOSS_BIT_COUNT; i++) {
-            bit[i].set(boss, 15, 5, i);
+            bit[i].set(boss, bossBitImages[i].naturalWidth, 25, i);
           }
-
           boss_event = false;
 
         } else if (weakEnemy) {
@@ -278,7 +291,6 @@ window.onload = function () {
       }
 
       // ボス--------------------
-      ctx.beginPath();
       if (boss.alive) {
         boss.param++;
         if (boss.position.y === boss.size * 2) {
@@ -294,89 +306,96 @@ window.onload = function () {
 
         drawScreen(
           bossImage,
-          boss.position.x - bossImage.naturalWidth/2,
-          boss.position.y - bossImage.naturalHeight/2,
+          boss.position.x - bossImage.naturalWidth / 2,
+          boss.position.y - bossImage.naturalHeight / 2,
         );
 
 
 
-        if (boss.param % 40 === 0) {
-          for (i = 0; i < ENEMY_SHOT_MAX_COUNT; i++) {
-            if (!enemyShot[i].alive) {
+        if (boss.param % 50 === 0) {
+          for (i = 0; i < BOSS_SHOT_MAX_COUNT; i++) {
+            if (!bossShot[i].alive) {
               p = boss.position.distance(chara.position);
               p.normalize();
-              enemyShot[j].set(boss.position, p, 5, 2);
+              bossShot[i].set(boss.position, p, bossShotImage.naturalWidth, 10);
               break;
             }
           }
         }
       }
 
+
+
       // ビット--------------------------
-      ctx.beginPath();
       for (i = 0; i < BOSS_BIT_COUNT; i++) {
         if (bit[i].alive) {
           bit[i].param++;
           // 右
           if (bit[i].type === 0) {
-            bit[i].position.x = boss.position.x + (bossImage.naturalWidth/2 + bit[i].size);
+            bit[i].position.x = boss.position.x + (bossImage.naturalWidth / 2);
             bit[i].position.y = boss.position.y;
           }
           // 左
           if (bit[i].type === 1) {
-            bit[i].position.x = boss.position.x - (bossImage.naturalWidth/2 + bit[i].size);
+            bit[i].position.x = boss.position.x - (bossImage.naturalWidth / 2);
             bit[i].position.y = boss.position.y;
           }
           drawScreen(
             bossBitImages[i],
-            bit[i].position.x - bossBitImages[i].naturalWidth/2,
-            bit[i].position.y - bossBitImages[i].naturalHeight/2,
+            bit[i].position.x - bossBitImages[i].naturalWidth / 2,
+            bit[i].position.y - bossBitImages[i].naturalHeight / 2,
           );
-        }
 
-        if (bit[i].param % 25 === 0) {
-          for (j = 0; j < ENEMY_SHOT_MAX_COUNT; j++) {
-            if (!enemyShot[j].alive) {
-              p = bit[i].position.distance(chara.position);
-              p.normalize();
-              enemyShot[j].set(bit[i].position, p, 4, 4);
-
-              break;
+          if (bit[i].param % 30 === 0) {
+            for (j = 0; j < BOSS_BIT_SHOT_MAX_COUNT; j++) {
+              if (!bitShot[j].alive) {
+                p = bit[i].position.distance(chara.position);
+                p.normalize();
+                bitShot[j].set(bit[i].position, p, bossBitShotImage.naturalWidth, 20);
+                break;
+              }
             }
           }
         }
       }
 
-
-
       // enemyShotの描画(雑魚)
-      if (weakEnemy) {
-        for (i = 0; i < ENEMY_SHOT_MAX_COUNT; i++) {
-          if (enemyShot[i].alive) {
-            enemyShot[i].move();
-            drawScreen(
-              enemyShot[i].image,
-              enemyShot[i].position.x - enemyShot[i].image.naturalWidth / 2,
-              enemyShot[i].position.y - enemyShot[i].image.naturalHeight / 2,
-            );
-          }
+      for (i = 0; i < ENEMY_SHOT_MAX_COUNT; i++) {
+        if (enemyShot[i].alive) {
+          enemyShot[i].move();
+          drawScreen(
+            enemyShot[i].image,
+            enemyShot[i].position.x - enemyShot[i].image.naturalWidth / 2,
+            enemyShot[i].position.y - enemyShot[i].image.naturalHeight / 2,
+          );
         }
       }
 
-      if(boss_event){
-        for (i = 0; i < ENEMY_SHOT_MAX_COUNT; i++) {
-          if (enemyShot[i].alive) {
-            enemyShot[i].move();
-            drawScreen(
-              bossBitShotImage,
-              enemyShot[i].position.x - bossBitShotImage.naturalWidth / 2,
-              enemyShot[i].position.y - bossBitShotImage.naturalHeight / 2,
-            );
-          }
+      // ボスショットの描画
+      for (i = 0; i < BOSS_SHOT_MAX_COUNT; i++) {
+        if (bossShot[i].alive) {
+          bossShot[i].move();
+          drawScreen(
+            bossShotImage,
+            bossShot[i].position.x - bossShotImage.naturalWidth / 2,
+            bossShot[i].position.y - bossShotImage.naturalHeight / 2,
+          )
         }
       }
 
-      // 衝突判定-------------------------------------
+      // ビットショットの描画
+      for (i = 0; i < BOSS_BIT_SHOT_MAX_COUNT; i++) {
+        if (bitShot[i].alive) {
+          bitShot[i].move();
+          drawScreen(
+            bossBitShotImage,
+            bitShot[i].position.x - bossBitShotImage.naturalWidth / 2,
+            bitShot[i].position.y - bossBitShotImage.naturalHeight / 2,
+          )
+        }
+      }
+
+      // 衝突判定--------------------------------------------------------------------------------------------------------
       for (i = 0; i < CHARA_SHOT_MAX_COUNT; i++) {
         if (charaShot[i].alive) {
           // 自機ショットとエネミーとの衝突判定
@@ -404,7 +423,6 @@ window.onload = function () {
         }
       }
 
-      // 爆発描画
       for (let explosion of explosions) {
         let exImage = explosionImages[Math.floor(explosion.tics / ANIMATION_TICS)]
         drawScreen(
@@ -418,84 +436,33 @@ window.onload = function () {
         }
       }
 
-
+      // 自機と敵機との衝突判定
       for (i = 0; i < ENEMY_MAX_COUNT; i++) {
         if (enemy[i] && enemy[i].alive) {
-          // 自機と敵機との衝突判定
           p = chara.position.distance(enemy[i].position);
           if (p.length() < chara.size) {
             let explosionAudio = new Audio("music/explosion.mp3");
             explosionAudio.play();
-
-            let x = chara.position.x;
-            let y = chara.position.y;
-            let explosion = new Explosion();
-            explosion.position.x = x;
-            explosion.position.y = y;
-            explosions.push(explosion);
-
             chara.alive = false;
             run = false;
-            message = 'GAME OVER !!';
             break;
           }
         }
       }
 
-      // 爆発描画
-      for (let explosion of explosions) {
-        let exImage = explosionImages[Math.floor(explosion.tics / ANIMATION_TICS)]
-        drawScreen(
-          exImage,
-          explosion.position.x - exImage.naturalWidth / 2,
-          explosion.position.y - exImage.naturalWidth / 2,
-
-        );
-        explosion.tics++;
-        if (explosion.tics >= 4 * ANIMATION_TICS) {
-          explosions.splice(explosions.indexOf(explosion), 1);
-        }
-      }
-
-
+      // 自機とエネミーショットとの衝突判定
       for (i = 0; i < ENEMY_SHOT_MAX_COUNT; i++) {
         if (enemyShot[i].alive) {
-          // 自機とエネミーショットとの衝突判定
           p = chara.position.distance(enemyShot[i].position);
           if (p.length() < chara.size) {
             let explosionAudio = new Audio("music/explosion.mp3");
             explosionAudio.play();
-
-            let x = chara.position.x;
-            let y = chara.position.y;
-            let explosion = new Explosion();
-            explosion.position.x = x;
-            explosion.position.y = y;
-            explosions.push(explosion);
-
             chara.alive = false;
-
             run = false;
             break;
           }
         }
       }
-
-      // 爆発描画
-      for (let explosion of explosions) {
-        let exImage = explosionImages[Math.floor(explosion.tics / ANIMATION_TICS)]
-        drawScreen(
-          exImage,
-          explosion.position.x - exImage.naturalWidth / 2,
-          explosion.position.y - exImage.naturalWidth / 2,
-
-        );
-        explosion.tics++;
-        if (explosion.tics >= 4 * ANIMATION_TICS) {
-          explosions.splice(explosions.indexOf(explosion), 1);
-        }
-      }
-
 
       // 自機ショットと敵ショットとの判定
       for (i = 0; i < CHARA_SHOT_MAX_COUNT; i++) {
@@ -532,7 +499,6 @@ window.onload = function () {
           exImage,
           explosion.position.x - exImage.naturalWidth / 2,
           explosion.position.y - exImage.naturalWidth / 2,
-
         );
         explosion.tics++;
         if (explosion.tics >= 4 * ANIMATION_TICS) {
@@ -540,18 +506,24 @@ window.onload = function () {
         }
       }
 
-
       // 自機ショットとボスビットとの衝突判定
       for (i = 0; i < CHARA_SHOT_MAX_COUNT; i++) {
         if (charaShot[i].alive) {
           for (j = 0; j < BOSS_BIT_COUNT; j++) {
-            // ビットの生存フラグをチェック
             if (bit[j].alive) {
-              // ビットと自機ショットとの距離を計測
               p = bit[j].position.distance(charaShot[i].position);
               if (p.length() < bit[j].size) {
-                // 衝突していたら耐久値をデクリメントする
                 bit[j].life--;
+
+                let explosionAudio = new Audio("music/explosion.mp3");
+                explosionAudio.play();
+                let x = bit[j].position.x;
+                let y = bit[j].position.y;
+
+                let explosion = new Explosion();
+                explosion.position.x = x;
+                explosion.position.y = y;
+                explosions.push(explosion);
 
                 // 自機ショットの生存フラグを降ろす
                 charaShot[i].alive = false;
@@ -559,7 +531,8 @@ window.onload = function () {
                 // 耐久値がマイナスになったら生存フラグを降ろす
                 if (bit[j].life < 0) {
                   bit[j].alive = false;
-                  score += 3;
+                  notAliveNum++;    
+                  score += 10000;
                 }
                 break;
               }
@@ -568,57 +541,255 @@ window.onload = function () {
         }
       }
 
-      // ボスの生存フラグをチェック
-      for(i = 0;i < CHARA_SHOT_MAX_COUNT;i++){
-        if(charaShot[i].alive){
-          if (boss.alive) {
-            // 自機ショットとボスとの衝突判定
-            p = boss.position.distance(charaShot[i].position);
-            if (p.length() < boss.size) {
-              // 衝突していたら耐久値をデクリメントする
-              boss.life--;
-    
-              // 自機ショットの生存フラグを降ろす
-              charaShot[i].alive = false;
-    
-              // 耐久値がマイナスになったらクリア
-              if (boss.life < 0) {
-                score += 10;
-                run = false;
-                message = 'CLEAR !!';
+      if(notAliveNum === 2){
+        for (let explosion of explosions) {
+          let exImage = explosionImages[Math.floor(explosion.tics / ANIMATION_TICS)]
+          drawScreen(
+            exImage,
+            explosion.position.x - exImage.naturalWidth / 2,
+            explosion.position.y - exImage.naturalWidth / 2,
+          );
+          explosion.tics++;
+          if (explosion.tics >= 4 * ANIMATION_TICS) {
+            explosions.splice(explosions.indexOf(explosion), 1);
+          }
+        }
+      }
+
+      // 自機ショットとボス本体の判定
+      if(notAliveNum === 2){
+        for (i = 0; i < CHARA_SHOT_MAX_COUNT; i++) {
+          if (charaShot[i].alive) {
+            if (boss.alive) {
+              // 自機ショットとボスとの衝突判定
+              p = boss.position.distance(charaShot[i].position);
+              if (p.length() < boss.size) {
+                boss.life--;
+  
+                let explosionAudio = new Audio("music/explosion.mp3");
+                explosionAudio.play();
+                let x = charaShot[i].position.x;
+                let y = charaShot[i].position.y;
+  
+                let explosion = new Explosion();
+                explosion.position.x = x;
+                explosion.position.y = y;
+                explosions.push(explosion);
+  
+                charaShot[i].alive = false;
+  
+                if (boss.life < 0) {
+                  score += 500;
+                  clear = true;
+                  run = false;
+                }
+              }
+            }
+          }
+        }
+      }
+      
+
+      for (let explosion of explosions) {
+        let exImage = explosionImages[Math.floor(explosion.tics / ANIMATION_TICS)]
+        drawScreen(
+          exImage,
+          explosion.position.x - exImage.naturalWidth / 2,
+          explosion.position.y - exImage.naturalWidth / 2,
+
+        );
+        explosion.tics++;
+        if (explosion.tics >= 4 * ANIMATION_TICS) {
+          explosions.splice(explosions.indexOf(explosion), 1);
+        }
+      }
+
+      // 自機ショットとビットショット
+      for (i = 0; i < CHARA_SHOT_MAX_COUNT; i++) {
+        if (charaShot[i].alive) {
+          for (j = 0; j < BOSS_BIT_SHOT_MAX_COUNT; j++) {
+            if (bitShot[j].alive) {
+              p = bitShot[j].position.distance(charaShot[i].position);
+              if (p.length() < bitShot[j].size) {
+                let explosionAudio = new Audio("music/explosion.mp3");
+                explosionAudio.play();
+                let x = bitShot[j].position.x;
+                let y = bitShot[j].position.y;
+
+                let explosion = new Explosion();
+                explosion.position.x = x;
+                explosion.position.y = y;
+                explosions.push(explosion);
+
+                bitShot[j].alive = false;
+                charaShot[i].alive = false;
+
+                score += 10 + level * 100;
+                break;
               }
             }
           }
         }
       }
 
+      for (let explosion of explosions) {
+        let exImage = explosionImages[Math.floor(explosion.tics / ANIMATION_TICS)]
+        drawScreen(
+          exImage,
+          explosion.position.x - exImage.naturalWidth / 2,
+          explosion.position.y - exImage.naturalWidth / 2,
+
+        );
+        explosion.tics++;
+        if (explosion.tics >= 4 * ANIMATION_TICS) {
+          explosions.splice(explosions.indexOf(explosion), 1);
+        }
+      }
+
+      // 自機ショットとボスショット
+      for (i = 0; i < CHARA_SHOT_MAX_COUNT; i++) {
+        if (charaShot[i].alive) {
+          for (j = 0; j < BOSS_SHOT_MAX_COUNT; j++) {
+            if (bossShot[j].alive) {
+              p = bossShot[j].position.distance(charaShot[i].position);
+              if (p.length() < bossShot[j].size) {
+                let explosionAudio = new Audio("music/explosion.mp3");
+                explosionAudio.play();
+                let x = bossShot[j].position.x;
+                let y = bossShot[j].position.y;
+
+                let explosion = new Explosion();
+                explosion.position.x = x;
+                explosion.position.y = y;
+                explosions.push(explosion);
+
+                bossShot[j].alive = false;
+                charaShot[i].alive = false;
+
+                score += 10 + level * 100;
+                break;
+              }
+            }
+          }
+        }
+      }
+
+      for (let explosion of explosions) {
+        let exImage = explosionImages[Math.floor(explosion.tics / ANIMATION_TICS)]
+        drawScreen(
+          exImage,
+          explosion.position.x - exImage.naturalWidth / 2,
+          explosion.position.y - exImage.naturalWidth / 2,
+
+        );
+        explosion.tics++;
+        if (explosion.tics >= 4 * ANIMATION_TICS) {
+          explosions.splice(explosions.indexOf(explosion), 1);
+        }
+      }
+
+      // 自機のボスショット当たり判定
+      for (i = 0; i < ENEMY_SHOT_MAX_COUNT; i++) {
+        if (bossShot[i].alive) {
+          // 自機とエネミーショットとの衝突判定
+          p = chara.position.distance(bossShot[i].position);
+          if (p.length() < chara.size) {
+            let explosionAudio = new Audio("music/explosion.mp3");
+            explosionAudio.play();
+            chara.alive = false;
+            run = false;
+            break;
+          }
+        }
+      }
+
+      // 自機のビットショット当たり判定
+      for (i = 0; i < ENEMY_SHOT_MAX_COUNT; i++) {
+        if (bitShot[i].alive) {
+          // 自機とエネミーショットとの衝突判定
+          p = chara.position.distance(bitShot[i].position);
+          if (p.length() < chara.size) {
+            let explosionAudio = new Audio("music/explosion.mp3");
+            explosionAudio.play();
+            chara.alive = false;
+            run = false;
+            break;
+          }
+        }
+      }
+
+      // 自機とビットの当たり判定
+      for (i = 0; i < BOSS_BIT_COUNT; i++) {
+        if (bit[i] && bit[i].alive) {
+          // 自機と敵機との衝突判定
+          p = chara.position.distance(bit[i].position);
+          if (p.length() < chara.size) {
+            let explosionAudio = new Audio("music/explosion.mp3");
+            explosionAudio.play();
+            chara.alive = false;
+            run = false;
+            break;
+          }
+        }
+      }
+
+      // 自機とボスとの当たり判定
+      if (boss && boss.alive) {
+        p = chara.position.distance(boss.position);
+        if (p.length() < chara.size) {
+          let explosionAudio = new Audio("music/explosion.mp3");
+          explosionAudio.play();
+          chara.alive = false;
+          run = false;
+        }
+      }
+
+      let levelUpAudio = new Audio("music/powerup02.mp3");
       // レベル設定
-      if (score >= 30 && level === 0) {
+      if (score >= 1000 && level === 0) {
         frame -= 10;
         level++;
         image_idx++;
-      } else if (score >= 500 && level === 1) {
+        levelUpAudio.play();
+      } else if (score >= 3000 && level === 1) {
+        frame -= 10;
+        level++;
+        image_idx++;
+        levelUpAudio.play();
+      } else if (score >= 7000 && level === 2) {
+        frame -= 10;
+        level++;
+        image_idx++;
+        levelUpAudio.play();
+      } else if (score >= 15000 && level === 3) {
         frame -= 15;
         level++;
         image_idx++;
-      } else if (score >= 1000 && level === 2) {
+        levelUpAudio.play();
+      } else if (score >= 31000 && level === 4) {
         frame -= 15;
         level++;
-        image_idx++;
-      } else if (score >= 2000 && level === 3) {
-        frame -= 15;
-        level++;
-        image_idx++;
-      } else if (score >= 5000 && level === 4) {
-        frame -= 15;
-        level++;
-      } else if (score >= 6000 && level === 5) {
-        boss_event = true;
+        levelUpAudio.play();
+      } else if (score >= 70000 && level === 5) {
         weakEnemy = false;
+        boss_event = true;
         level++;
+        levelUpAudio.play();
       }
 
-      if (run === false) {
+      if (run === false && clear === true) {
+        ctx.clearRect(0, 0, screenCanvas.width, screenCanvas.height);
+        let clearAudio = new Audio("music/nc41828.wav");
+        clearAudio.play();
+        drawScreen(backImage, 0, 0);
+        ctx.fillStyle = 'rgba(255,0,0,1)';
+        ctx.font = "italic 80px Arial";
+        ctx.fillText('GAME CLEAR !!', screenCanvas.width / 2, screenCanvas.height / 3);
+        ctx.textAlign = 'center';
+        ctx.fillStyle = 'rgba(255,255,255,0.9)';
+        ctx.font = "italic 40px Arial";
+        ctx.fillText(`SCORE:${score}`, screenCanvas.width / 2, screenCanvas.height * 2 / 3);
+      }else if(run === false){
         // GAME OVER表示
         ctx.clearRect(0, 0, screenCanvas.width, screenCanvas.height);
         drawScreen(backImage, 0, 0);
@@ -663,13 +834,16 @@ function keyDown(event) {
 
   //------- startボタン----------
   // Enterキー
-  if (ck === 13) { start = true };
+  if (ck === 13) { 
+    start = true
+    let selectAudio = new Audio('music/decision3.mp3'); 
+    selectAudio.play();
+  };
 
-  // aキー
-  if (ck === 65) { endWindow = false, start = false };
 }
 
 function drawScreen(image, x, y) {
   ctx.drawImage(image, x, y);
 }
+
 
